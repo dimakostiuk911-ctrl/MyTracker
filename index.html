@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dark Fantasy Habit Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel&family=MedievalSharp&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0d0d0d;
+      color: #e0dede;
+      font-family: 'Cinzel', serif;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      background: #1a1a1a;
+      border-bottom: 2px solid #333;
+    }
+
+    .character {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 3px solid #444;
+      object-fit: cover;
+    }
+
+    .level-bar {
+      width: 300px;
+      background: #333;
+      border: 1px solid #555;
+      height: 20px;
+      margin: 10px auto;
+      position: relative;
+    }
+
+    .level-fill {
+      background: linear-gradient(to right, #5e2b40, #af4261);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .habit-list {
+      max-width: 600px;
+      margin: 30px auto;
+      background: #1a1a1a;
+      border: 2px solid #2f2f2f;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .habit {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 10px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    .habit label {
+      flex: 1;
+      margin-left: 10px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 14px;
+      padding: 10px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🕯️ The Ritual Ledger</h1>
+  </header>
+
+  <section class="character">
+    <img src="https://i.imgur.com/B9a0rzO.png" class="avatar" alt="Dark Avatar">
+    <div>
+      <h2 id="char-name">Arkan, the Disciplined</h2>
+      <p>Level <span id="level">1</span></p>
+      <div class="level-bar">
+        <div class="level-fill" id="xp-bar"></div>
+      </div>
+      <p><span id="xp">0</span> XP</p>
+    </div>
+  </section>
+
+  <section class="habit-list">
+    <h3>Daily Rituals</h3>
+    <div id="habits">
+      <!-- Habit checkboxes will go here -->
+    </div>
+  </section>
+
+  <div class="footer">
+    ⌛ Your habits will reset at midnight. Progress is eternal.
+  </div>
+
+  <script>
+    const habits = [
+      { id: "water", label: "☠️ Consume the Elixir of Life (2L Water)", points: 10 },
+      { id: "read", label: "📜 Study the Forbidden Texts (Read 10 Pages)", points: 10 },
+      { id: "walk", label: "🚶‍♂️ Traverse the Shadowlands (Walk 30 mins)", points: 10 },
+      { id: "meditate", label: "🧘‍♂️ Commune with the Void (Meditate 10 mins)", points: 10 },
+      { id: "wake", label: "🌄 Rise Before the Black Sun (Wake Before 9AM)", points: 10 },
+      { id: "sleep", label: "🌙 Rest Before the Witching Hour (Sleep Before 12AM)", points: 10 },
+      { id: "study", label: "📖 Channel the Arcane (Study for 30 mins)", points: 10 }
+    ];
+
+    const xpPerLevel = 100;
+
+    const user = {
+      xp: parseInt(localStorage.getItem('xp')) || 0,
+      level: parseInt(localStorage.getItem('level')) || 1,
+      lastReset: localStorage.getItem('lastReset') || null,
+      completedHabits: JSON.parse(localStorage.getItem('completedHabits')) || {}
+    };
+
+    const now = new Date();
+    const today = now.toDateString();
+
+    // Reset habits if it's a new day
+    if (user.lastReset !== today) {
+      user.completedHabits = {};
+      user.lastReset = today;
+      localStorage.setItem('completedHabits', JSON.stringify(user.completedHabits));
+      localStorage.setItem('lastReset', today);
+    }
+
+    function updateXP(points) {
+      user.xp += points;
+      while (user.xp >= xpPerLevel) {
+        user.xp -= xpPerLevel;
+        user.level += 1;
+      }
+      saveProgress();
+      renderStats();
+    }
+
+    function saveProgress() {
+      localStorage.setItem('xp', user.xp);
+      localStorage.setItem('level', user.level);
+      localStorage.setItem('completedHabits', JSON.stringify(user.completedHabits));
+    }
+
+    function renderStats() {
+      document.getElementById('level').textContent = user.level;
+      document.getElementById('xp').textContent = user.xp;
+      document.getElementById('xp-bar').style.width = (user.xp / xpPerLevel) * 100 + "%";
+    }
+
+    function createHabits() {
+      const container = document.getElementById("habits");
+      habits.forEach(habit => {
+        const habitDiv = document.createElement("div");
+        habitDiv.className = "habit";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = user.completedHabits[habit.id] || false;
+        checkbox.disabled = user.completedHabits[habit.id] || false;
+
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked && !user.completedHabits[habit.id]) {
+            user.completedHabits[habit.id] = true;
+            updateXP(habit.points);
+            checkbox.disabled = true;
+          }
+        });
+
+        const label = document.createElement("label");
+        label.textContent = habit.label;
+
+        habitDiv.appendChild(checkbox);
+        habitDiv.appendChild(label);
+        container.appendChild(habitDiv);
+      });
+    }
+
+    renderStats();
+    createHabits();
+  </script>
+</body>
+</html>
